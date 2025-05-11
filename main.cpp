@@ -62,24 +62,77 @@ void systemWindow(const char *id, ImVec2 size, ImVec2 position)
     ImGui::SameLine();
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", getLoggedInUser().c_str());
     
-    // CPU Information
     ImGui::Text("CPU Model:");
     ImGui::SameLine();
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", CPUinfo().c_str());
 
-    ImGui::Text("CPU Type:");
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", getCPUType().c_str());
+    // Performance Monitoring Tabs
+    static PerformanceData cpuData, fanData, thermalData;
+    static bool initialized = false;
 
-    // Task Statistics
-    TaskStats stats = getProcessStats();
-    ImGui::Text("Task Statistics:");
-    ImGui::Text("  Total Tasks:     %d", stats.total);
-    ImGui::Text("  Running:         %d", stats.running);
-    ImGui::Text("  Sleeping:        %d", stats.sleeping);
-    ImGui::Text("  Uninterruptible: %d", stats.uninterruptible);
-    ImGui::Text("  Zombie:          %d", stats.zombie);
-    ImGui::Text("  Traced/Stopped:  %d", stats.traced);
+    if (!initialized) {
+        initPerformanceData(cpuData);
+        initPerformanceData(fanData);
+        initPerformanceData(thermalData);
+        initialized = true;
+    }
+
+    // Update data
+    updatePerformanceData(cpuData, getCPUUsage());
+    updatePerformanceData(fanData, getFanSpeed());
+    updatePerformanceData(thermalData, getCPUTemperature());
+
+    ImGui::Separator();
+    if (ImGui::BeginTabBar("PerformanceTabs")) {
+        // CPU Tab
+        if (ImGui::BeginTabItem("CPU")) {
+            ImGui::Text("CPU Usage: %.1f%%", cpuData.currentValue);
+            
+            ImGui::Checkbox("Pause", &cpuData.isPaused);
+            ImGui::SliderInt("FPS", &cpuData.fps, 1, 60);
+            ImGui::SliderFloat("Y Scale", &cpuData.yScale, 0.1f, 2.0f);
+            
+            ImVec2 graphSize(ImGui::GetWindowWidth() - 20, 200);
+            ImGui::PlotLines("##CPU", cpuData.values.data(), cpuData.values.size(), 
+                           0, NULL, 0.0f, 100.0f * cpuData.yScale, graphSize);
+            
+            ImGui::EndTabItem();
+        }
+
+        // Fan Tab
+        if (ImGui::BeginTabItem("Fan")) {
+            ImGui::Text("Fan Speed: %d RPM", (int)fanData.currentValue);
+            ImGui::Text("Status: %s", fanData.currentValue > 0 ? "Active" : "Inactive");
+            ImGui::Text("Level: %d%%", (int)((fanData.currentValue * 100) / 5000));
+            
+            ImGui::Checkbox("Pause", &fanData.isPaused);
+            ImGui::SliderInt("FPS", &fanData.fps, 1, 60);
+            ImGui::SliderFloat("Y Scale", &fanData.yScale, 0.1f, 2.0f);
+            
+            ImVec2 graphSize(ImGui::GetWindowWidth() - 20, 200);
+            ImGui::PlotLines("##Fan", fanData.values.data(), fanData.values.size(), 
+                           0, NULL, 0.0f, 5000.0f * fanData.yScale, graphSize);
+            
+            ImGui::EndTabItem();
+        }
+
+        // Thermal Tab
+        if (ImGui::BeginTabItem("Thermal")) {
+            ImGui::Text("Temperature: %.1f°C", thermalData.currentValue);
+            
+            ImGui::Checkbox("Pause", &thermalData.isPaused);
+            ImGui::SliderInt("FPS", &thermalData.fps, 1, 60);
+            ImGui::SliderFloat("Y Scale", &thermalData.yScale, 0.1f, 2.0f);
+            
+            ImVec2 graphSize(ImGui::GetWindowWidth() - 20, 200);
+            ImGui::PlotLines("##Thermal", thermalData.values.data(), thermalData.values.size(), 
+                           0, NULL, 0.0f, 100.0f * thermalData.yScale, graphSize);
+            
+            ImGui::EndTabItem();
+        }
+        
+        ImGui::EndTabBar();
+    }
 
     ImGui::End();
 }
@@ -103,7 +156,131 @@ void networkWindow(const char *id, ImVec2 size, ImVec2 position)
     ImGui::SetWindowSize(id, size);
     ImGui::SetWindowPos(id, position);
 
-    // student TODO : add code here for the network information
+    static vector<NetworkStats> networkStats = getAllNetworkStats();
+    static time_t lastUpdate = 0;
+    time_t currentTime = time(nullptr);
+    
+    // Update network stats every second
+    if (currentTime - lastUpdate >= 1) {
+        networkStats = getAllNetworkStats();
+        lastUpdate = currentTime;
+    }
+
+    // Display network interfaces and their IPv4 addresses
+    ImGui::Text("Network Interfaces:");
+    for (const auto& stats : networkStats) {
+        ImGui::Text("%s: %s", stats.interface.c_str(), stats.ipv4.c_str());
+    }
+
+    ImGui::Separator();
+
+    if (ImGui::BeginTabBar("NetworkTabs")) {
+        // RX Statistics Tab
+        if (ImGui::BeginTabItem("RX Statistics")) {
+            if (ImGui::BeginTable("RXTable", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+                ImGui::TableSetupColumn("Interface");
+                ImGui::TableSetupColumn("Bytes");
+                ImGui::TableSetupColumn("Packets");
+                ImGui::TableSetupColumn("Errors");
+                ImGui::TableSetupColumn("Drops");
+                ImGui::TableSetupColumn("FIFO");
+                ImGui::TableSetupColumn("Frame");
+                ImGui::TableSetupColumn("Multicast");
+                ImGui::TableHeadersRow();
+
+                for (const auto& stats : networkStats) {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%s", stats.interface.c_str());
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%s", formatBytes(stats.rx_bytes).c_str());
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%llu", stats.rx_packets);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%llu", stats.rx_errs);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%llu", stats.rx_drop);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%llu", stats.rx_fifo);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%llu", stats.rx_frame);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%llu", stats.rx_multicast);
+                }
+                ImGui::EndTable();
+            }
+            ImGui::EndTabItem();
+        }
+
+        // TX Statistics Tab
+        if (ImGui::BeginTabItem("TX Statistics")) {
+            if (ImGui::BeginTable("TXTable", 8, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+                ImGui::TableSetupColumn("Interface");
+                ImGui::TableSetupColumn("Bytes");
+                ImGui::TableSetupColumn("Packets");
+                ImGui::TableSetupColumn("Errors");
+                ImGui::TableSetupColumn("Drops");
+                ImGui::TableSetupColumn("FIFO");
+                ImGui::TableSetupColumn("Collisions");
+                ImGui::TableSetupColumn("Carrier");
+                ImGui::TableHeadersRow();
+
+                for (const auto& stats : networkStats) {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%s", stats.interface.c_str());
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%s", formatBytes(stats.tx_bytes).c_str());
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%llu", stats.tx_packets);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%llu", stats.tx_errs);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%llu", stats.tx_drop);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%llu", stats.tx_fifo);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%llu", stats.tx_colls);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%llu", stats.tx_carrier);
+                }
+                ImGui::EndTable();
+            }
+            ImGui::EndTabItem();
+        }
+
+        // Visual Usage Tab
+        if (ImGui::BeginTabItem("Visual Usage")) {
+            const float maxGB = 2.0f;  // Maximum display value in GB
+            const float maxBytes = maxGB * 1024 * 1024 * 1024;  // Convert to bytes
+
+            // RX Progress Bars
+            ImGui::Text("RX Usage:");
+            for (const auto& stats : networkStats) {
+                float progress = static_cast<float>(stats.rx_bytes) / maxBytes;
+                progress = std::min(progress, 1.0f);  // Cap at 100%
+                
+                ImGui::Text("%s: %s", stats.interface.c_str(), formatBytes(stats.rx_bytes).c_str());
+                ImGui::ProgressBar(progress, ImVec2(-1, 0));
+                ImGui::Text("2.00 GB");
+            }
+
+            ImGui::Separator();
+
+            // TX Progress Bars
+            ImGui::Text("TX Usage:");
+            for (const auto& stats : networkStats) {
+                float progress = static_cast<float>(stats.tx_bytes) / maxBytes;
+                progress = std::min(progress, 1.0f);  // Cap at 100%
+                
+                ImGui::Text("%s: %s", stats.interface.c_str(), formatBytes(stats.tx_bytes).c_str());
+                ImGui::ProgressBar(progress, ImVec2(-1, 0));
+            }
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+    }
 
     ImGui::End();
 }

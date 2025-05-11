@@ -118,40 +118,49 @@ string getCPUType();
 
 // student TODO : network
 
-// For graph data
-struct GraphData {
+// For performance monitoring
+struct PerformanceData {
     std::vector<float> values;
-    float maxValue;
-    float minValue;
     bool isPaused;
     int fps;
     float yScale;
+    float currentValue;
 };
 
-// For CPU monitoring
-struct CPUData {
-    GraphData graph;
-    float currentUsage;
+// Function declarations for performance monitoring
+void initPerformanceData(PerformanceData& data);
+void updatePerformanceData(PerformanceData& data, float newValue);
+float getCPUUsage();
+int getFanSpeed();
+float getCPUTemperature();
+void performanceWindow(const char *id, ImVec2 size, ImVec2 position);
+
+// Network interface information structure
+struct NetworkStats {
+    string interface;
+    string ipv4;
+    uint64_t rx_bytes;
+    uint64_t rx_packets;
+    uint64_t rx_errs;
+    uint64_t rx_drop;
+    uint64_t rx_fifo;
+    uint64_t rx_frame;
+    uint64_t rx_compressed;
+    uint64_t rx_multicast;
+    uint64_t tx_bytes;
+    uint64_t tx_packets;
+    uint64_t tx_errs;
+    uint64_t tx_drop;
+    uint64_t tx_fifo;
+    uint64_t tx_colls;
+    uint64_t tx_carrier;
+    uint64_t tx_compressed;
 };
 
-// For Fan monitoring
-struct FanData {
-    GraphData graph;
-    bool isActive;
-    int currentSpeed;
-    int level;
-};
-
-// For Thermal monitoring
-struct ThermalData {
-    GraphData graph;
-    float currentTemp;
-};
-
-// Function declarations
-CPUData getCPUData();
-FanData getFanData();
-ThermalData getThermalData();
-void updateGraphData(GraphData& data, float newValue);
+// Network functions
+string formatBytes(uint64_t bytes);
+vector<pair<string, string>> getNetworkInterfaces();
+NetworkStats getNetworkStats(const string& interface);
+vector<NetworkStats> getAllNetworkStats();
 
 #endif

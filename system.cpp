@@ -169,4 +169,103 @@ string getCPUType() {
     return "Unknown";
 }
 
+// Initialize performance data
+void initPerformanceData(PerformanceData& data) {
+    data.values.resize(100, 0.0f);
+    data.isPaused = false;
+    data.fps = 30;
+    data.yScale = 1.0f;
+    data.currentValue = 0.0f;
+}
+
+// Update performance data
+void updatePerformanceData(PerformanceData& data, float newValue) {
+    if (!data.isPaused) {
+        data.values.erase(data.values.begin());
+        data.values.push_back(newValue);
+        data.currentValue = newValue;
+    }
+}
+
+// Get CPU usage percentage
+float getCPUUsage() {
+    static long long lastTotalUser = 0, lastTotalUserLow = 0, lastTotalSys = 0, lastTotalIdle = 0;
+    long long totalUser, totalUserLow, totalSys, totalIdle;
+    
+    ifstream statFile("/proc/stat");
+    if (statFile.is_open()) {
+        string line;
+        getline(statFile, line);
+        stringstream ss(line);
+        string cpu;
+        ss >> cpu >> totalUser >> totalUserLow >> totalSys >> totalIdle;
+        
+        if (lastTotalUser == 0) {
+            lastTotalUser = totalUser;
+            lastTotalUserLow = totalUserLow;
+            lastTotalSys = totalSys;
+            lastTotalIdle = totalIdle;
+            return 0.0f;
+        }
+        
+        long long totalUserDiff = totalUser - lastTotalUser;
+        long long totalUserLowDiff = totalUserLow - lastTotalUserLow;
+        long long totalSysDiff = totalSys - lastTotalSys;
+        long long totalIdleDiff = totalIdle - lastTotalIdle;
+        
+        lastTotalUser = totalUser;
+        lastTotalUserLow = totalUserLow;
+        lastTotalSys = totalSys;
+        lastTotalIdle = totalIdle;
+        
+        long long total = totalUserDiff + totalUserLowDiff + totalSysDiff + totalIdleDiff;
+        return total == 0 ? 0.0f : 100.0f * (total - totalIdleDiff) / total;
+    }
+    return 0.0f;
+}
+
+// Get fan speed
+int getFanSpeed() {
+    DIR* hwmonDir = opendir("/sys/class/hwmon");
+    if (hwmonDir != nullptr) {
+        struct dirent* entry;
+        while ((entry = readdir(hwmonDir)) != nullptr) {
+            if (isdigit(entry->d_name[0])) {
+                string fanPath = "/sys/class/hwmon/" + string(entry->d_name) + "/fan1_input";
+                ifstream fanFile(fanPath);
+                if (fanFile.is_open()) {
+                    int speed;
+                    fanFile >> speed;
+                    closedir(hwmonDir);
+                    return speed;
+                }
+            }
+        }
+        closedir(hwmonDir);
+    }
+    return 0;
+}
+
+// Get CPU temperature
+float getCPUTemperature() {
+    DIR* thermalDir = opendir("/sys/class/thermal");
+    if (thermalDir != nullptr) {
+        struct dirent* entry;
+        while ((entry = readdir(thermalDir)) != nullptr) {
+            if (isdigit(entry->d_name[0])) {
+                string tempPath = "/sys/class/thermal/thermal_" + string(entry->d_name) + "/temp";
+                ifstream tempFile(tempPath);
+                if (tempFile.is_open()) {
+                    int temp;
+                    tempFile >> temp;
+                    closedir(thermalDir);
+                    return temp / 1000.0f;  // Convert millidegree to degree
+                }
+            }
+        }
+        closedir(thermalDir);
+    }
+    return 0.0f;
+}
+
 

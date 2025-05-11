@@ -105,10 +105,18 @@ $ tree system-monitor
 - SDL2:
   ```bash
   sudo apt install libsdl2-dev
+  ```
+  Alternatively, for other systems, use the appropriate package manager:
+  ```bash
+  brew install sdl2 #macOS (Homebrew)
+  vcpkg install sdl2 # Windows (vcpkg)
+  ```
+ 
 
 ### 🔧 Build Instructions
 
-```make
+```bash
+make
 ./system-monitor
 ```
 ### 📚 Learning Outcomes

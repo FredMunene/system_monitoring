@@ -53,13 +53,33 @@ void systemWindow(const char *id, ImVec2 size, ImVec2 position)
     ImGui::SameLine();
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", getDetailedOSInfo().c_str());
     
+    // Hostname
+    ImGui::Text("Computer Name:");
+    ImGui::SameLine();
+    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", getHostname().c_str());
+    
     ImGui::Text("Logged in User:");
     ImGui::SameLine();
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", getLoggedInUser().c_str());
     
+    // CPU Information
     ImGui::Text("CPU Model:");
     ImGui::SameLine();
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", CPUinfo().c_str());
+
+    ImGui::Text("CPU Type:");
+    ImGui::SameLine();
+    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", getCPUType().c_str());
+
+    // Task Statistics
+    TaskStats stats = getProcessStats();
+    ImGui::Text("Task Statistics:");
+    ImGui::Text("  Total Tasks:     %d", stats.total);
+    ImGui::Text("  Running:         %d", stats.running);
+    ImGui::Text("  Sleeping:        %d", stats.sleeping);
+    ImGui::Text("  Uninterruptible: %d", stats.uninterruptible);
+    ImGui::Text("  Zombie:          %d", stats.zombie);
+    ImGui::Text("  Traced/Stopped:  %d", stats.traced);
 
     ImGui::End();
 }

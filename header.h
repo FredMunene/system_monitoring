@@ -96,15 +96,62 @@ struct RX
     int compressed;
 };
 
+struct TaskStats {
+    int running;
+    int sleeping;
+    int uninterruptible;
+    int zombie;
+    int traced; 
+    int total;
+};
+
 // student TODO : system stats
 string CPUinfo();
 const char *getOsName();
 string getLoggedInUser();
 string getDetailedOSInfo();
-
+string getHostname();
+TaskStats getProcessStats();
+string getCPUType();
 
 // student TODO : memory and processes
 
 // student TODO : network
+
+// For graph data
+struct GraphData {
+    std::vector<float> values;
+    float maxValue;
+    float minValue;
+    bool isPaused;
+    int fps;
+    float yScale;
+};
+
+// For CPU monitoring
+struct CPUData {
+    GraphData graph;
+    float currentUsage;
+};
+
+// For Fan monitoring
+struct FanData {
+    GraphData graph;
+    bool isActive;
+    int currentSpeed;
+    int level;
+};
+
+// For Thermal monitoring
+struct ThermalData {
+    GraphData graph;
+    float currentTemp;
+};
+
+// Function declarations
+CPUData getCPUData();
+FanData getFanData();
+ThermalData getThermalData();
+void updateGraphData(GraphData& data, float newValue);
 
 #endif

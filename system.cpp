@@ -49,3 +49,38 @@ const char *getOsName()
     return "Other";
 #endif
 }
+
+// Get the logged-in username
+string getLoggedInUser() {
+    char username[LOGIN_NAME_MAX];
+    if (getlogin_r(username, LOGIN_NAME_MAX) == 0) {
+        return string(username);
+    }
+    return "Unknown";
+}
+
+// Get detailed OS information
+string getDetailedOSInfo() {
+    string osInfo = getOsName();
+    
+    // Try to get distribution information for Linux
+    #ifdef __linux__
+    ifstream osRelease("/etc/os-release");
+    if (osRelease.is_open()) {
+        string line;
+        while (getline(osRelease, line)) {
+            if (line.find("PRETTY_NAME=") != string::npos) {
+                // Remove PRETTY_NAME= and quotes
+                string prettyName = line.substr(12);
+                if (prettyName.front() == '"') prettyName = prettyName.substr(1);
+                if (prettyName.back() == '"') prettyName.pop_back();
+                return prettyName;
+            }
+        }
+    }
+    #endif
+    
+    return osInfo;
+}
+
+

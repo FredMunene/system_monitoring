@@ -50,6 +50,18 @@ void systemWindow(const char *id, ImVec2 size, ImVec2 position)
     ImGui::SetWindowSize(id, size);
     ImGui::SetWindowPos(id, position);
 
+    // Get task statistics first
+    TaskStats stats = getProcessStats();
+    
+    ImGui::Separator();
+
+    // Display total processes prominently at the top
+    ImGui::Text("Total Processes:");
+    ImGui::SameLine();
+    ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "%d", stats.total);  // Orange color for emphasis
+
+
+
     // Display system information
     ImGui::Text("Operating System:");
     ImGui::SameLine();
@@ -293,6 +305,14 @@ void networkWindow(const char *id, ImVec2 size, ImVec2 position)
     ImGui::Begin(id);
     ImGui::SetWindowSize(id, size);
     ImGui::SetWindowPos(id, position);
+
+    // Display current time
+    time_t now = time(nullptr);
+    struct tm* timeinfo = localtime(&now);
+    char timeStr[100];
+    strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", timeinfo);
+    ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Current Time: %s", timeStr);  // Green color for visibility
+    ImGui::Separator();
 
     static vector<NetworkStats> networkStats = getAllNetworkStats();
     static time_t lastUpdate = 0;

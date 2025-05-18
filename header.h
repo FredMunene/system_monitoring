@@ -105,7 +105,7 @@ struct TaskStats {
     int total;
 };
 
-// student TODO : system stats
+// system stats
 string CPUinfo();
 const char *getOsName();
 string getLoggedInUser();
@@ -114,9 +114,7 @@ string getHostname();
 TaskStats getProcessStats();
 string getCPUType();
 
-// student TODO : memory and processes
 
-// student TODO : network
 
 // For performance monitoring
 struct PerformanceData {
@@ -135,6 +133,8 @@ int getFanSpeed();
 float getCPUTemperature();
 void performanceWindow(const char *id, ImVec2 size, ImVec2 position);
 
+
+// network
 // Network interface information structure
 struct NetworkStats {
     string interface;
@@ -162,5 +162,35 @@ string formatBytes(uint64_t bytes);
 vector<pair<string, string>> getNetworkInterfaces();
 NetworkStats getNetworkStats(const string& interface);
 vector<NetworkStats> getAllNetworkStats();
+
+// memory and processes
+
+// Memory usage structure
+struct MemoryInfo {
+    uint64_t totalRam;
+    uint64_t usedRam;
+    uint64_t freeRam;
+    uint64_t totalSwap;
+    uint64_t usedSwap;
+    uint64_t freeSwap;
+};
+
+// Disk usage structure
+struct DiskInfo {
+    string mountPoint;
+    uint64_t totalSpace;
+    uint64_t usedSpace;
+    uint64_t freeSpace;
+};
+
+// Memory functions
+MemoryInfo getMemoryInfo();
+vector<DiskInfo> getDiskInfo();
+string formatBytes(uint64_t bytes);
+float getMemoryUsagePercentage(const MemoryInfo& info);
+float getSwapUsagePercentage(const MemoryInfo& info);
+float getDiskUsagePercentage(const DiskInfo& disk);
+vector<Proc> getProcessList();
+float calculateCPUPercentage(const Proc& proc);  // Calculate CPU usage percentage for a process
 
 #endif

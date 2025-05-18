@@ -148,3 +148,59 @@ float calculateCPUPercentage(const Proc& proc) {
     
     return cpuPercent;
 }
+
+// Alternative method to get memory information using /proc/meminfo
+MemoryInfo getMemoryInfoFromProc() {
+    MemoryInfo info = {0, 0, 0, 0, 0, 0};
+    ifstream meminfo("/proc/meminfo");
+    if (meminfo.is_open()) {
+        string line;
+        map<string, uint64_t> memValues;
+        
+        while (getline(meminfo, line)) {
+            stringstream ss(line);
+            string key;
+            uint64_t value;
+            string unit;
+            
+            ss >> key >> value >> unit;
+            // Remove the colon from the key
+            if (!key.empty() && key.back() == ':') {
+                key.pop_back();
+            }
+            memValues[key] = value;
+        }
+        
+        // Convert KB to bytes
+        const uint64_t KB_TO_BYTES = 1024;
+        
+        // Total RAM = MemTotal
+        info.totalRam = memValues["MemTotal"] * KB_TO_BYTES;
+        
+        // Free RAM = MemFree + Buffers + Cached + SReclaimable
+        info.freeRam = (memValues["MemFree"] + 
+                       memValues["Buffers"] + 
+                       memValues["Cached"] + 
+                       memValues["SReclaimable"]) * KB_TO_BYTES;
+        
+        // Used RAM = Total - Free
+        info.usedRam = info.totalRam - info.freeRam;
+        
+        // SWAP information
+        info.totalSwap = memValues["SwapTotal"] * KB_TO_BYTES;
+        info.freeSwap = memValues["SwapFree"] * KB_TO_BYTES;
+        info.usedSwap = info.totalSwap - info.freeSwap;
+    }
+    return info;
+}
+
+// Get memory usage percentage using the new method
+float getMemoryUsagePercentageFromProc(const MemoryInfo& info) {
+    if (info.totalRam == 0) return 0.0f;
+    
+    // Calculate actual memory usage excluding buffers and cache
+    uint64_t actualUsed = info.totalRam - (info.freeRam - 
+                         (info.usedRam - (info.totalRam - info.freeRam)));
+    
+    return (static_cast<float>(actualUsed) / info.totalRam) * 100.0f;
+}

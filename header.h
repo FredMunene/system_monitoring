@@ -185,12 +185,14 @@ struct DiskInfo {
 
 // Memory functions
 MemoryInfo getMemoryInfo();
+MemoryInfo getMemoryInfoFromProc();  // Alternative method using /proc/meminfo
 vector<DiskInfo> getDiskInfo();
 string formatBytes(uint64_t bytes);
 float getMemoryUsagePercentage(const MemoryInfo& info);
+float getMemoryUsagePercentageFromProc(const MemoryInfo& info);  // Alternative calculation method
 float getSwapUsagePercentage(const MemoryInfo& info);
 float getDiskUsagePercentage(const DiskInfo& disk);
 vector<Proc> getProcessList();
-float calculateCPUPercentage(const Proc& proc);  // Calculate CPU usage percentage for a process
+float calculateCPUPercentage(const Proc& proc);
 
 #endif

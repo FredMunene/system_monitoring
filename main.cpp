@@ -158,14 +158,14 @@ void memoryProcessesWindow(const char *id, ImVec2 size, ImVec2 position)
     ImGui::SetWindowSize(id, size);
     ImGui::SetWindowPos(id, position);
 
-    static MemoryInfo memInfo = getMemoryInfo();
+    static MemoryInfo memInfo = getMemoryInfoFromProc();  // Using the new method
     static vector<DiskInfo> diskInfo = getDiskInfo();
     static time_t lastUpdate = 0;
     time_t currentTime = time(nullptr);
     
     // Update information every second
     if (currentTime - lastUpdate >= 1) {
-        memInfo = getMemoryInfo();
+        memInfo = getMemoryInfoFromProc();  // Using the new method
         diskInfo = getDiskInfo();
         lastUpdate = currentTime;
     }
@@ -175,10 +175,18 @@ void memoryProcessesWindow(const char *id, ImVec2 size, ImVec2 position)
         if (ImGui::BeginTabItem("Memory")) {
             // RAM Usage
             ImGui::Text("Physical Memory (RAM)");
-            float ramUsage = getMemoryUsagePercentage(memInfo);
+            float ramUsage = getMemoryUsagePercentageFromProc(memInfo);  // Using the new calculation method
             ImGui::Text("Total: %s", formatBytes(memInfo.totalRam).c_str());
             ImGui::Text("Used: %s (%.1f%%)", formatBytes(memInfo.usedRam).c_str(), ramUsage);
             ImGui::Text("Free: %s", formatBytes(memInfo.freeRam).c_str());
+            
+            // Add detailed memory information
+            ImGui::Separator();
+            ImGui::Text("Memory Details:");
+            ImGui::Text("Buffers: %s", formatBytes(memInfo.freeRam - (memInfo.totalRam - memInfo.usedRam)).c_str());
+            ImGui::Text("Cached: %s", formatBytes(memInfo.freeRam - (memInfo.totalRam - memInfo.usedRam)).c_str());
+            ImGui::Text("Actual Used: %s", formatBytes(memInfo.totalRam - memInfo.freeRam).c_str());
+            
             ImGui::ProgressBar(ramUsage / 100.0f, ImVec2(-1, 0));
             ImGui::SameLine();
             ImGui::Text("%.1f%%", ramUsage);
